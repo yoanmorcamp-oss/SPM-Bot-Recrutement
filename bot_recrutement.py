@@ -108,9 +108,8 @@ async def on_ready():
     description="Poste le message et le bouton de recrutement SPM",
     guild=GUILD_ID,
 )
-@app_commands.checks.has_permissions(administrator=True)
 async def setup_recrutement(interaction: discord.Interaction):
-  # IMPÉRATIF : Répondre à Discord dans la première seconde pour éviter le crash
+  # Réponse immédiate pour garantir qu'il n'y a pas de timeout
   await interaction.response.send_message(
       "Déploiement du message de recrutement en cours...", ephemeral=True
   )
@@ -171,7 +170,6 @@ def run_discord():
   client.run(token)
 
 
-# Lancement du thread pour que Gunicorn et le bot cohabitent sur Render
 if not any(t.name == "DiscordThread" for t in threading.enumerate()):
   discord_thread = threading.Thread(
       target=run_discord, name="DiscordThread", daemon=True
