@@ -1,8 +1,9 @@
+from flask import Flask
+import threading
 import discord
 from discord import app_commands
 from discord.ui import View, Button, Modal, TextInput
 from datetime import datetime, timedelta
-
 # ==================== CONFIGURATION ====================
 STAFF_CHANNEL_ID = 1557463296326639666  # Ton salon staff/admin enregistré
 GUILD_ID = discord.Object(id=1222994281334177842)      # Ton serveur Discord SPM
