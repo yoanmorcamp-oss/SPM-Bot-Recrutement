@@ -14,27 +14,36 @@ STAFF_CHANNEL_ID = 1557463296326639666
 
 
 class CandidatureModal(Modal, title="Candidature SPM"):
+
+  def __init__(self):
+    super().__init__()
+
   nom_age = TextInput(
       label="Nom, Prénom & Âge",
       placeholder="ex: Morcamp Yoan, 50 ans",
+      required=True,
   )
   experience = TextInput(
       label="Expérience en simracing (LMU, etc.)",
       placeholder="Ton parcours, iRating/Driver Ranking...",
       style=discord.TextStyle.paragraph,
+      required=True,
   )
   vehicules = TextInput(
       label="Classes maîtrisées (Hypercar, LMP2, LMGT3)",
       placeholder="Quelles catégories tu pilotes le mieux ?",
+      required=True,
   )
   disponibilites = TextInput(
       label="Disponibilités & Présence",
       placeholder="Tes jours d'entraînement, dispo courses...",
+      required=True,
   )
   motivations = TextInput(
       label="Pourquoi rejoindre Stinger Performance ?",
       placeholder="Tes motivations et ton état d'esprit...",
       style=discord.TextStyle.paragraph,
+      required=True,
   )
 
   async def on_submit(self, interaction: discord.Interaction):
@@ -99,13 +108,11 @@ class StaffDecisionView(View):
       child.disabled = True
     await interaction.message.edit(view=self)
 
-    # Calcul des dates pour la période d'essai (1 mois)
     today = datetime.now()
     end_date = today + timedelta(days=30)
     date_today_str = today.strftime("%d/%m/%Y")
     date_end_str = end_date.strftime("%d/%m/%Y")
 
-    # Embed de félicitations / acceptation en MP
     embed_accept = discord.Embed(
         title="🎉 Félicitations ! Candidature retenue - SPM",
         description=(
@@ -146,7 +153,6 @@ class StaffDecisionView(View):
       child.disabled = True
     await interaction.message.edit(view=self)
 
-    # Embed de refus en MP
     embed_refuse = discord.Embed(
         title="Mise à jour concernant ta candidature - SPM",
         description=(
@@ -184,6 +190,7 @@ class RecrutementView(View):
   async def postuler(
       self, interaction: discord.Interaction, button: discord.Button
   ):
+    # Envoi direct du modal pour éviter le timeout de 3 secondes de Discord
     await interaction.response.send_modal(CandidatureModal())
 
 
@@ -194,9 +201,13 @@ class MyClient(discord.Client):
     self.tree = app_commands.CommandTree(self)
 
   async def setup_hook(self):
+    # Enregistrement persistant des vues pour qu'elles fonctionnent même après un redémarrage du bot
     self.add_view(RecrutementView())
+    self.add_view(
+        StaffDecisionView(None)
+    )  # Permet de garder les boutons staff actifs
     await self.tree.sync()
-    print("Commandes synchronisées globalement et vue persistante enregistrée.")
+    print("Commandes synchronisées et vues persistantes enregistrées.")
 
 
 client = MyClient()
