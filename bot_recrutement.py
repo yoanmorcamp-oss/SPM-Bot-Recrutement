@@ -13,7 +13,7 @@ STAFF_CHANNEL_ID = (
     1557463296326639666  # Ton salon staff/admin enregistré
 )
 GUILD_ID = discord.Object(
-    id=122994281334177842
+    id=1222994281334177842
 )  # Ton serveur Discord SPM
 # ===============================================
 
