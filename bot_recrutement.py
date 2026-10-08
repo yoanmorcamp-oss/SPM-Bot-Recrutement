@@ -114,7 +114,6 @@ async def on_ready():
 )
 @app_commands.checks.has_permissions(administrator=True)
 async def setup_recrutement(interaction: discord.Interaction):
-  # Réponse immédiate pour éviter le timeout de 3 secondes de Discord
   await interaction.response.send_message(
       "Déploiement du message de recrutement en cours...", ephemeral=True
   )
@@ -175,10 +174,9 @@ def run_discord():
   client.run(token)
 
 
-if __name__ == "__main__":
-  # Le bot Discord tourne en arrière-plan
-  threading.Thread(target=run_discord).daemon = True
-
-  # Flask s'exécute sur le port alloué par Render
-  port = int(os.environ.get("PORT", 10000))
-  app.run(host="0.0.0.0", port=port)
+# Lancement automatique du thread Discord dès que Gunicorn charge le fichier
+if not any(t.name == "DiscordThread" for t in threading.enumerate()):
+  discord_thread = threading.Thread(
+      target=run_discord, name="DiscordThread", daemon=True
+  )
+  discord_thread.start()
