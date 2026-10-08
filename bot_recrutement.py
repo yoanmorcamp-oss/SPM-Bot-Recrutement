@@ -147,3 +147,36 @@ async def setup_recrutement(interaction: discord.Interaction):
       ),
       color=discord.Color.from_rgb(114, 13, 148),
   )
+
+  await interaction.channel.send(embed=embed, view=RecrutementView())
+  await interaction.response.send_message(
+      "Message de recrutement déployé avec succès !", ephemeral=True
+  )
+
+
+# ===============================================
+# CONFIGURATION SERVEUR WEB (FLASK) POUR RENDER
+# ===============================================
+app = Flask("")
+
+
+@app.route("/")
+def home():
+  return "Bot SPM Recrutement est en ligne !"
+
+
+def run_discord():
+  token = os.getenv("DISCORD_TOKEN")
+  if not token:
+    print("Erreur : Le token Discord est introuvable dans les variables d'env.")
+    return
+  client.run(token)
+
+
+if __name__ == "__main__":
+  # Le bot Discord tourne en arrière-plan
+  threading.Thread(target=run_discord).daemon = True
+
+  # Flask s'exécute sur le port alloué par Render
+  port = int(os.environ.get("PORT", 10000))
+  app.run(host="0.0.0.0", port=port)
