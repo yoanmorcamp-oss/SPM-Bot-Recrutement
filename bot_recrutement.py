@@ -9,12 +9,8 @@ from flask import Flask
 # ===============================================
 # CONFIGURATION
 # ===============================================
-STAFF_CHANNEL_ID = (
-    1557463296326639666  # Ton salon staff/admin enregistré
-)
-GUILD_ID = discord.Object(
-    id=1222994281334177842
-)  # Ton serveur Discord SPM
+STAFF_CHANNEL_ID = 1557463296326639666
+GUILD_ID = discord.Object(id=122994281334177842)
 # ===============================================
 
 
@@ -114,6 +110,7 @@ async def on_ready():
 )
 @app_commands.checks.has_permissions(administrator=True)
 async def setup_recrutement(interaction: discord.Interaction):
+  # IMPÉRATIF : Répondre à Discord dans la première seconde pour éviter le crash
   await interaction.response.send_message(
       "Déploiement du message de recrutement en cours...", ephemeral=True
   )
@@ -156,7 +153,7 @@ async def setup_recrutement(interaction: discord.Interaction):
 
 
 # ===============================================
-# CONFIGURATION SERVEUR WEB (FLASK) POUR RENDER
+# CONFIGURATION SERVEUR WEB (FLASK) & GUNICORN
 # ===============================================
 app = Flask("")
 
@@ -174,7 +171,7 @@ def run_discord():
   client.run(token)
 
 
-# Lancement automatique du thread Discord dès que Gunicorn charge le fichier
+# Lancement du thread pour que Gunicorn et le bot cohabitent sur Render
 if not any(t.name == "DiscordThread" for t in threading.enumerate()):
   discord_thread = threading.Thread(
       target=run_discord, name="DiscordThread", daemon=True
