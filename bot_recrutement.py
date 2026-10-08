@@ -20,12 +20,20 @@ class CandidatureModal(Modal, title="Candidature SPM"):
   )
   experience = TextInput(
       label="Expérience en simracing (LMU, etc.)",
-      placeholder="Décris ton parcours...",
+      placeholder="Ton parcours, iRating/Driver Ranking...",
       style=discord.TextStyle.paragraph,
+  )
+  vehicules = TextInput(
+      label="Classes maîtrisées (Hypercar, LMP2, LMGT3)",
+      placeholder="Quelles catégories tu pilotes le mieux ?",
+  )
+  disponibilites = TextInput(
+      label="Disponibilités & Présence",
+      placeholder="Tes jours d'entraînement, dispo courses...",
   )
   motivations = TextInput(
       label="Pourquoi rejoindre Stinger Performance ?",
-      placeholder="Tes motivations...",
+      placeholder="Tes motivations et ton état d'esprit...",
       style=discord.TextStyle.paragraph,
   )
 
@@ -45,6 +53,12 @@ class CandidatureModal(Modal, title="Candidature SPM"):
     )
     embed.add_field(
         name="Expérience", value=self.experience.value, inline=False
+    )
+    embed.add_field(
+        name="Classes maîtrisées", value=self.vehicules.value, inline=False
+    )
+    embed.add_field(
+        name="Disponibilités", value=self.disponibilites.value, inline=False
     )
     embed.add_field(
         name="Motivations", value=self.motivations.value, inline=False
@@ -89,7 +103,6 @@ class MyClient(discord.Client):
 
   async def setup_hook(self):
     self.add_view(RecrutementView())
-    # Synchronisation globale (disponible instantanément sur tous tes serveurs)
     await self.tree.sync()
     print("Commandes synchronisées globalement et vue persistante enregistrée.")
 
