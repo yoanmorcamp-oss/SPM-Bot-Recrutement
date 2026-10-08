@@ -108,12 +108,15 @@ async def on_ready():
 
 
 @client.tree.command(
-    name="setup_recrutement",
-    description="Affiche le message de recrutement SPM",
+    name="deploy_recrutement",
+    description="Poste le message et le bouton de recrutement SPM",
     guild=GUILD_ID,
 )
 @app_commands.checks.has_permissions(administrator=True)
 async def setup_recrutement(interaction: discord.Interaction):
+  # On prévient Discord de patienter pour éviter le message d'erreur d'expiration
+  await interaction.response.defer(ephemeral=True)
+
   embed = discord.Embed(
       title="Stinger Performance Motorsport - Recrutement",
       description=(
@@ -149,7 +152,7 @@ async def setup_recrutement(interaction: discord.Interaction):
   )
 
   await interaction.channel.send(embed=embed, view=RecrutementView())
-  await interaction.response.send_message(
+  await interaction.followup.send(
       "Message de recrutement déployé avec succès !", ephemeral=True
   )
 
