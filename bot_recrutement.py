@@ -114,8 +114,10 @@ async def on_ready():
 )
 @app_commands.checks.has_permissions(administrator=True)
 async def setup_recrutement(interaction: discord.Interaction):
-  # On prévient Discord de patienter pour éviter le message d'erreur d'expiration
-  await interaction.response.defer(ephemeral=True)
+  # Réponse immédiate pour éviter le timeout de 3 secondes de Discord
+  await interaction.response.send_message(
+      "Déploiement du message de recrutement en cours...", ephemeral=True
+  )
 
   embed = discord.Embed(
       title="Stinger Performance Motorsport - Recrutement",
@@ -152,9 +154,6 @@ async def setup_recrutement(interaction: discord.Interaction):
   )
 
   await interaction.channel.send(embed=embed, view=RecrutementView())
-  await interaction.followup.send(
-      "Message de recrutement déployé avec succès !", ephemeral=True
-  )
 
 
 # ===============================================
