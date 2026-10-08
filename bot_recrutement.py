@@ -224,4 +224,4 @@ async def deploy_recrutement(interaction: discord.Interaction):
 import os
 
 token = os.getenv("DISCORD_TOKEN")
-bot.run(token)
+client.run(token)
