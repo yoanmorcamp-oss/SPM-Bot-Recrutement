@@ -65,7 +65,6 @@ class CandidatureModal(Modal, title="Candidature SPM"):
     )
 
     if staff_channel:
-      # Envoi de la candidature avec les boutons de décision pour le staff
       await staff_channel.send(
           embed=embed, view=StaffDecisionView(interaction.user)
       )
@@ -96,28 +95,42 @@ class StaffDecisionView(View):
   async def accepter(
       self, interaction: discord.Interaction, button: discord.Button
   ):
-    # Désactiver les boutons pour éviter les doubles clics
     for child in self.children:
       child.disabled = True
     await interaction.message.edit(view=self)
 
-    # Notifier le candidat en MP
+    # Calcul des dates pour la période d'essai (1 mois)
+    today = datetime.now()
+    end_date = today + timedelta(days=30)
+    date_today_str = today.strftime("%d/%m/%Y")
+    date_end_str = end_date.strftime("%d/%m/%Y")
+
+    # Embed de félicitations / acceptation en MP
+    embed_accept = discord.Embed(
+        title="🎉 Félicitations ! Candidature retenue - SPM",
+        description=(
+            "Bonjour !\n\nLe staff de la **Stinger Performance Motorsport** a"
+            " examiné ta candidature avec attention et a le plaisir de"
+            " t'annoncer qu'elle est **validée** !\n\n"
+            "🏎️ **Début de ta période d'essai :**\n"
+            f"Ta période d'essai officielle d'un mois commence dès aujourd'hui"
+            f" (**{date_today_str}**) et se terminera le **{date_end_str}**.\n"
+            "C'est l'occasion de partager nos sessions d'entraînement, de"
+            " trouver tes repères en piste et de confirmer notre belle cohésion"
+            " d'équipe.\n\n"
+            "Bienvenue à bord et **BEE FAST, STING HARD** 🐝 !"
+        ),
+        color=discord.Color.green(),
+    )
+
     try:
-      await self.candidate.send(
-          "🎉 **Félicitations !** Ta candidature pour rejoindre **Stinger"
-          " Performance Motorsport** a été **acceptée** par le staff.\n"
-          "Comme indiqué dans nos critères, ton intégration sera suivie d'une"
-          " **période d'essai d'un mois** afin de valider notre bonne cohésion"
-          " commune.\n"
-          "Un membre du staff va prendre contact avec toi pour la suite."
-          ' *#BEE FAST, STING HARD*'
-      )
+      await self.candidate.send(embed=embed_accept)
     except discord.HTTPException:
       pass
 
     await interaction.response.send_message(
         f"✅ Candidature de {self.candidate.mention} acceptée. Le candidat a"
-        " été prévenu en MP.",
+        " reçu son embed de validation en MP.",
         ephemeral=True,
     )
 
@@ -133,20 +146,27 @@ class StaffDecisionView(View):
       child.disabled = True
     await interaction.message.edit(view=self)
 
-    # Notifier le candidat en MP
+    # Embed de refus en MP
+    embed_refuse = discord.Embed(
+        title="Mise à jour concernant ta candidature - SPM",
+        description=(
+            "Bonjour,\n\nNous te remercions pour l'intérêt que tu portes à la"
+            " **Stinger Performance Motorsport**.\n"
+            "Après étude de ton profil, nous ne pouvons malheureusement pas"
+            " donner suite à ta candidature pour le moment.\n\n"
+            "Nous te souhaitons une excellente continuation sur les pistes !"
+        ),
+        color=discord.Color.red(),
+    )
+
     try:
-      await self.candidate.send(
-          "Bonjour,\nNous te remercions pour l'intérêt porté à **Stinger"
-          " Performance Motorsport**. Malheureusement, nous ne donnerons pas"
-          " suite à ta candidature pour le moment.\n"
-          "Bonne continuation sur les pistes ! *#BEE FAST, STING HARD*"
-      )
+      await self.candidate.send(embed=embed_refuse)
     except discord.HTTPException:
       pass
 
     await interaction.response.send_message(
         f"❌ Candidature de {self.candidate.mention} refusée. Le candidat a"
-        " été prévenu en MP.",
+        " reçu son embed de refus en MP.",
         ephemeral=True,
     )
 
