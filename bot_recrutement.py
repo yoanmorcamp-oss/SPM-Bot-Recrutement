@@ -10,7 +10,6 @@ from flask import Flask
 # CONFIGURATION
 # ===============================================
 STAFF_CHANNEL_ID = 1557463296326639666
-GUILD_ID = discord.Object(id=122994281334177842)
 # ===============================================
 
 
@@ -90,8 +89,9 @@ class MyClient(discord.Client):
 
   async def setup_hook(self):
     self.add_view(RecrutementView())
-    await self.tree.sync(guild=GUILD_ID)
-    print("Commandes synchronisées et vue persistante enregistrée.")
+    # Synchronisation globale (disponible instantanément sur tous tes serveurs)
+    await self.tree.sync()
+    print("Commandes synchronisées globalement et vue persistante enregistrée.")
 
 
 client = MyClient()
@@ -106,10 +106,8 @@ async def on_ready():
 @client.tree.command(
     name="deploy_recrutement",
     description="Poste le message et le bouton de recrutement SPM",
-    guild=GUILD_ID,
 )
 async def setup_recrutement(interaction: discord.Interaction):
-  # Réponse immédiate pour garantir qu'il n'y a pas de timeout
   await interaction.response.send_message(
       "Déploiement du message de recrutement en cours...", ephemeral=True
   )
