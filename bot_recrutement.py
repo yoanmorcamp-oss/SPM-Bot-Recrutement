@@ -65,7 +65,10 @@ class CandidatureModal(Modal, title="Candidature SPM"):
     )
 
     if staff_channel:
-      await staff_channel.send(embed=embed)
+      # Envoi de la candidature avec les boutons de décision pour le staff
+      await staff_channel.send(
+          embed=embed, view=StaffDecisionView(interaction.user)
+      )
       await interaction.response.send_message(
           "✅ Ta candidature a bien été envoyée au staff de Stinger"
           " Performance Motorsport ! Nous allons l'étudier rapidement.",
@@ -77,6 +80,75 @@ class CandidatureModal(Modal, title="Candidature SPM"):
           " directement.",
           ephemeral=True,
       )
+
+
+class StaffDecisionView(View):
+
+  def __init__(self, candidate: discord.User):
+    super().__init__(timeout=None)
+    self.candidate = candidate
+
+  @discord.ui.button(
+      label="✅ Accepter",
+      style=discord.ButtonStyle.success,
+      custom_id="btn_accept_candidature",
+  )
+  async def accepter(
+      self, interaction: discord.Interaction, button: discord.Button
+  ):
+    # Désactiver les boutons pour éviter les doubles clics
+    for child in self.children:
+      child.disabled = True
+    await interaction.message.edit(view=self)
+
+    # Notifier le candidat en MP
+    try:
+      await self.candidate.send(
+          "🎉 **Félicitations !** Ta candidature pour rejoindre **Stinger"
+          " Performance Motorsport** a été **acceptée** par le staff.\n"
+          "Comme indiqué dans nos critères, ton intégration sera suivie d'une"
+          " **période d'essai d'un mois** afin de valider notre bonne cohésion"
+          " commune.\n"
+          "Un membre du staff va prendre contact avec toi pour la suite."
+          ' *#BEE FAST, STING HARD*'
+      )
+    except discord.HTTPException:
+      pass
+
+    await interaction.response.send_message(
+        f"✅ Candidature de {self.candidate.mention} acceptée. Le candidat a"
+        " été prévenu en MP.",
+        ephemeral=True,
+    )
+
+  @discord.ui.button(
+      label="❌ Refuser",
+      style=discord.ButtonStyle.danger,
+      custom_id="btn_refuse_candidature",
+  )
+  async def refuser(
+      self, interaction: discord.Interaction, button: discord.Button
+  ):
+    for child in self.children:
+      child.disabled = True
+    await interaction.message.edit(view=self)
+
+    # Notifier le candidat en MP
+    try:
+      await self.candidate.send(
+          "Bonjour,\nNous te remercions pour l'intérêt porté à **Stinger"
+          " Performance Motorsport**. Malheureusement, nous ne donnerons pas"
+          " suite à ta candidature pour le moment.\n"
+          "Bonne continuation sur les pistes ! *#BEE FAST, STING HARD*"
+      )
+    except discord.HTTPException:
+      pass
+
+    await interaction.response.send_message(
+        f"❌ Candidature de {self.candidate.mention} refusée. Le candidat a"
+        " été prévenu en MP.",
+        ephemeral=True,
+    )
 
 
 class RecrutementView(View):
