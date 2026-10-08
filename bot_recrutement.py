@@ -222,6 +222,23 @@ async def deploy_recrutement(interaction: discord.Interaction):
     
     await interaction.channel.send(embed=embed, view=RecrutementView())
 
+# --- Mini-serveur Flask pour garder le bot éveillé sur Render ---
+app = Flask("")
+
+
+@app.route("/")
+def home():
+  return "Bot SPM Recrutement est en ligne !"
+
+
+def run_web():
+  app.run(host="0.0.0.0", port=10000)
+
+
+# Lancement du serveur web en arrière-plan
+threading.Thread(target=run_web).daemon = True
+# -------------------------------------------------------------
+
 import os
 
 token = os.getenv("DISCORD_TOKEN")
