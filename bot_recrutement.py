@@ -185,12 +185,11 @@ class RecrutementView(View):
   @discord.ui.button(
       label="Postuler chez SPM",
       style=discord.ButtonStyle.primary,
-      custom_id="btn_postuler_spm",
+      custom_id="btn_postuler_spm_unique",
   )
   async def postuler(
       self, interaction: discord.Interaction, button: discord.Button
   ):
-    # Envoi direct du modal pour éviter le timeout de 3 secondes de Discord
     await interaction.response.send_modal(CandidatureModal())
 
 
@@ -201,13 +200,9 @@ class MyClient(discord.Client):
     self.tree = app_commands.CommandTree(self)
 
   async def setup_hook(self):
-    # Enregistrement persistant des vues pour qu'elles fonctionnent même après un redémarrage du bot
     self.add_view(RecrutementView())
-    self.add_view(
-        StaffDecisionView(None)
-    )  # Permet de garder les boutons staff actifs
     await self.tree.sync()
-    print("Commandes synchronisées et vues persistantes enregistrées.")
+    print("Vue persistante enregistrée et commandes synchronisées.")
 
 
 client = MyClient()
