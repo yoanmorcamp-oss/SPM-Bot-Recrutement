@@ -9,8 +9,8 @@ from flask import Flask
 # ===============================================
 # CONFIGURATION
 # ===============================================
-STAFF_CHANNEL_ID = 1557463296326639666  # Ton salon staff principal
-# ID de la catégorie où les salons de candidature vont se créer (optionnel, mets l'ID ou laisse None)
+STAFF_CHANNEL_ID = 1557463296326639666  # Ton salon staff
+# ID de la catégorie où créer les salons (laisse None si tu veux les créer à la racine du serveur)
 CATEGORY_CANDIDATURES_ID = None
 # ===============================================
 
@@ -49,13 +49,13 @@ class CandidatureModal(Modal, title="Candidature SPM"):
   )
 
   async def on_submit(self, interaction: discord.Interaction):
-    # On accuse réception immédiatement pour éviter le timeout
+    # On accuse réception immédiatement ici pour avoir jusqu'à 15 minutes pour créer le salon
     await interaction.response.defer(ephemeral=True)
 
     guild = interaction.guild
     user = interaction.user
 
-    # Nettoyage du nom pour créer un salon propre (ex: candidature-yoan-morcamp)
+    # Formatage du nom pour le salon textuel
     safe_name = (
         user.name.lower()
         .replace(" ", "-")
@@ -63,16 +63,18 @@ class CandidatureModal(Modal, title="Candidature SPM"):
         .encode("ascii", "ignore")
         .decode("ascii")
     )
+    if not safe_name:
+      safe_name = f"candidat-{user.id}"
     channel_name = f"candidature-{safe_name}"
 
-    # Récupération de la catégorie si elle est définie
+    # Récupération de la catégorie
     category = (
         guild.get_channel(CATEGORY_CANDIDATURES_ID)
         if CATEGORY_CANDIDATURES_ID
         else None
     )
 
-    # Définition des permissions du salon (Privé : visible uniquement par le staff et le candidat)
+    # Permissions du salon privé (Visible uniquement par le candidat et le bot)
     overwrites = {
         guild.default_role: discord.PermissionOverwrite(view_channel=False),
         user: discord.PermissionOverwrite(
@@ -83,18 +85,13 @@ class CandidatureModal(Modal, title="Candidature SPM"):
         ),
     }
 
-    # Si tu as un rôle Staff, tu peux aussi lui donner accès automatiquement (remplace par l'ID de ton rôle staff si besoin)
-    # staff_role = guild.get_role(ID_ROLE_STAFF)
-    # if staff_role:
-    #     overwrites[staff_role] = discord.PermissionOverwrite(view_channel=True, send_messages=True)
-
     try:
-      # Création automatique du salon
+      # Création du salon textuel dédié
       new_channel = await guild.create_text_channel(
           name=channel_name, category=category, overwrites=overwrites
       )
 
-      # Construction de l'embed de candidature
+      # Construction de l'embed
       embed = discord.Embed(
           title=f"📥 Candidature de {user.display_name}",
           color=discord.Color.from_rgb(114, 13, 148),
@@ -117,30 +114,41 @@ class CandidatureModal(Modal, title="Candidature SPM"):
           name="Motivations", value=self.motivations.value, inline=False
       )
 
-      # Envoi de l'embed et des boutons de décision dans ce nouveau salon dédié
+      # Envoi du message et des boutons de décision dans le nouveau salon
       await new_channel.send(
           content=(
               f"Bienvenue {user.mention} ! Voici ton espace de candidature"
-              " dédié. Le staff va l'étudier très rapidement ici."
+              " privé. Le staff de la Stinger Performance Motorsport étudiera"
+              " ton dossier ici."
           ),
           embed=embed,
           view=StaffDecisionView(user, new_channel),
       )
 
-      # Message de confirmation discret au candidat
+      # Envoi d'une copie de sauvegarde dans le salon staff principal si configuré
+      staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
+      if staff_channel:
+        await staff_channel.send(
+            content=(
+                f"🔔 **Nouvelle candidature créée :** {new_channel.mention}"
+            ),
+            embed=embed,
+        )
+
+      # Confirmation éphémère transmise à l'utilisateur
       await interaction.followup.send(
-          f"✅ Ta candidature a bien été envoyée ! Un salon privé a été créé"
-          f" pour toi : {new_channel.mention}.",
+          f"✅ Ta candidature a été enregistrée ! Un salon privé a été créé"
+          f" : {new_channel.mention}",
           ephemeral=True,
       )
 
     except Exception as e:
+      print(f"Erreur création salon candidature : {e}")
       await interaction.followup.send(
-          "❌ Une erreur est survenue lors de la création de ton salon de"
-          " candidature. Contacte un admin.",
+          "❌ Une erreur s'est produite lors de la création du salon."
+          " Contacte un membre du staff.",
           ephemeral=True,
       )
-      print(f"Erreur création salon : {e}")
 
 
 class StaffDecisionView(View):
@@ -153,7 +161,7 @@ class StaffDecisionView(View):
   @discord.ui.button(
       label="✅ Accepter",
       style=discord.ButtonStyle.success,
-      custom_id="btn_accept_candidature_v2",
+      custom_id="btn_accept_candidature_v3",
   )
   async def accepter(
       self, interaction: discord.Interaction, button: discord.Button
@@ -176,7 +184,7 @@ class StaffDecisionView(View):
             "🏎️ **Début de ta période d'essai :**\n"
             f"Ta période d'essai officielle d'un mois commence dès aujourd'hui"
             f" (**{date_today_str}**) et se terminera le **{date_end_str}**.\n\n"
-            "Bienvenue à bord et **BEE FAST, STING HARD** *{\n"
+            "Bienvenue à bord et **BEE FAST, STING HARD** 🐝 !"
         ),
         color=discord.Color.green(),
     )
@@ -187,18 +195,18 @@ class StaffDecisionView(View):
       pass
 
     await interaction.response.send_message(
-        f"✅ Candidature acceptée. Le salon va être archivé/supprimé ou"
-        " conservé selon vos préférences.",
+        "✅ Candidature validée. Notification envoyée en MP au candidat.",
         ephemeral=True,
     )
     await self.channel.send(
-        "🔒 **Candidature validée !** Ce salon sera géré par le staff."
+        "🔒 **Candidature acceptée par le staff !** Ce salon peut désormais"
+        " être archivé ou supprimé."
     )
 
   @discord.ui.button(
       label="❌ Refuser",
       style=discord.ButtonStyle.danger,
-      custom_id="btn_refuse_candidature_v2",
+      custom_id="btn_refuse_candidature_v3",
   )
   async def refuser(
       self, interaction: discord.Interaction, button: discord.Button
@@ -225,11 +233,11 @@ class StaffDecisionView(View):
       pass
 
     await interaction.response.send_message(
-        "❌ Candidature refusée.", ephemeral=True
+        "❌ Candidature refusée. Notification envoyée en MP au candidat.",
+        ephemeral=True,
     )
     await self.channel.send(
-        "🔒 **Candidature refusée.** Le salon pourra être supprimé par le"
-        " staff."
+        "🔒 **Candidature refusée par le staff.** Ce salon peut être supprimé."
     )
 
 
@@ -241,11 +249,12 @@ class RecrutementView(View):
   @discord.ui.button(
       label="Postuler chez SPM",
       style=discord.ButtonStyle.primary,
-      custom_id="btn_postuler_spm_unique_v2",
+      custom_id="btn_postuler_spm_v3",
   )
   async def postuler(
       self, interaction: discord.Interaction, button: discord.Button
   ):
+    # Appel DIRECT de send_modal sans aucun defer pour éviter le timeout
     await interaction.response.send_modal(CandidatureModal())
 
 
@@ -285,9 +294,29 @@ async def setup_recrutement(interaction: discord.Interaction):
           "Pilotes, la Stinger Performance Motorsport recrute de nouveaux"
           " talents pour renforcer ses équipages en endurance (LMU) ! 🏎️ 🏁"
           " 🏆\n"
-          "Clique sur le bouton ci-dessous pour lancer ton questionnaire de"
-          " candidature. Un salon privé sera automatiquement créé pour ton"
-          " dossier !\n\n"
+          "Avant d'ouvrir votre dossier de candidature, assurez-vous de"
+          " correspondre à nos attentes et critères de sélection :\n"
+          "🎯 **Le Profil Recherché :**\n"
+          "• **Présence & Régularité :** Être présent régulièrement aux"
+          " sessions d'entraînement et disponible pour les courses.\n"
+          "• **Mentalité :** Esprit d'équipe irréprochable, bonne humeur et"
+          " détente hors piste, mais focus et rigueur une fois en course.\n"
+          "• **Investissement :** S'impliquer activement dans la vie de"
+          " l'équipe, la préparation des courses et le partage"
+          " d'expériences.\n"
+          "• **Période d'essai :** Toute intégration validée sera suivie"
+          " d'une période d'essai d'un mois afin de s'assurer de la bonne"
+          " cohésion avec l'équipe.\n"
+          "📋 **Prérequis :**\n"
+          "• **Driver Ranking :** S1\n"
+          "• **Safety Ranking :** P1\n"
+          "❌ **Si vous ne remplissez pas ces critères, merci de ne pas"
+          " envoyer de demande.**\n\n"
+          "💬 **Comment postuler ?**\n"
+          "Si vous avez le profil et l'envie de porter nos couleurs, cliquez"
+          " sur le bouton ci-dessous pour lancer votre candidature.\n"
+          "Un salon dédié sera automatiquement créé pour échanger avec le"
+          " staff.\n\n"
           '*"BEE FAST, STING HARD"*\n'
       ),
       color=discord.Color.from_rgb(114, 13, 148),
