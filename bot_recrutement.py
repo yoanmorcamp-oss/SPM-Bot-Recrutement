@@ -10,11 +10,11 @@ from flask import Flask
 # CONFIGURATION
 # ===============================================
 STAFF_CHANNEL_ID = 1557463296326639666  # Ton salon staff
-# ID de la catégorie où créer les salons (laisse None si tu veux les créer à la racine)
-CATEGORY_CANDIDATURES_ID = None
+CATEGORY_CANDIDATURES_ID = (
+    None  # Remplace par l'ID de la catégorie dédiée aux salons si souhaité
+)
 
-# OPTIONNEL : Si tu veux cibler un rôle staff précis par son ID, remplace 0 par son ID.
-# Si tu laisses 0, seuls les administrateurs du serveur pourront valider/refuser.
+# Rôle Staff autorisé à valider/refuser (laisser 0 pour autoriser uniquement les Administrateurs)
 STAFF_ROLE_ID = 0
 # ===============================================
 
@@ -307,11 +307,30 @@ async def setup_recrutement(interaction: discord.Interaction):
       description=(
           "**Recrutements / Candidatures**\n\n"
           "Pilotes, la Stinger Performance Motorsport recrute de nouveaux"
-          " talents pour renforcer ses équipages en endurance (LMU) ! 🏎️ 🏁"
-          " 🏆\n"
-          "Clique sur le bouton ci-dessous pour lancer ton questionnaire de"
-          " candidature. Un salon privé sera automatiquement créé pour ton"
-          " dossier !\n\n"
+          " talents pour renforcer ses équipages en endurance (LMU) !"
+          " 🏎️ 🏁 🏆\n"
+          "Avant d'ouvrir votre dossier de candidature, assurez-vous de"
+          " correspondre à nos attentes et critères de sélection :\n\n"
+          "🎯 **Le Profil Recherché :**\n"
+          "• **Présence & Régularité :** Être présent régulièrement aux"
+          " sessions d'entraînement et disponible pour les courses.\n"
+          "• **Mentalité :** Esprit d'équipe irréprochable, bonne humeur et"
+          " détente hors piste, mais focus et rigueur une fois en course.\n"
+          "• **Investissement :** S'impliquer activement dans la vie de"
+          " l'équipe, la préparation des courses et le partage"
+          " d'expériences.\n"
+          "• **Période d'essai :** Toute intégration validée sera suivie"
+          " d'une période d'essai d'un mois afin de s'assurer de la bonne"
+          " cohésion avec l'équipe.\n\n"
+          "📋 **Prérequis :**\n"
+          "• **Driver Ranking :** S1\n"
+          "• **Safety Ranking :** P1\n"
+          "❌ **Si vous ne remplissez pas ces critères, merci de ne pas"
+          " envoyer de demande.**\n\n"
+          "💬 **Comment postuler ?**\n"
+          "Si vous avez le profil et l'envie de porter nos couleurs, cliquez"
+          " sur le bouton ci-dessous pour lancer votre candidature.\n"
+          "Pour le moment 2 places de disponibles.\n"
           '*"BEE FAST, STING HARD"*\n'
       ),
       color=discord.Color.from_rgb(114, 13, 148),
@@ -321,7 +340,7 @@ async def setup_recrutement(interaction: discord.Interaction):
 
 
 # ===============================================
-# CONFIGURATION SERVEUR WEB (FLASK) & GUNICORN
+# SERVEUR WEB (FLASK) & DÉMARRAGE
 # ===============================================
 app = Flask("")
 
