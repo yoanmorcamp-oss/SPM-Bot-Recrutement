@@ -10,7 +10,10 @@ from flask import Flask
 # CONFIGURATION
 # ===============================================
 STAFF_CHANNEL_ID = 1557463296326639666  # Salon staff principal (#candidatures-recues)
-CATEGORY_CANDIDATURES_ID = 1557463296326639666  # Catégorie où créer les salons privés
+
+# Mettre l'ID de la CATÉGORIE Discord (et non pas du salon textuel). 
+# Si laissé à 0, le bot prendra automatiquement la catégorie du salon STAFF_CHANNEL_ID.
+CATEGORY_CANDIDATURES_ID = 0  
 
 # ID de ton rôle Staff (laisse 0 si tu veux autoriser uniquement les Administrateurs)
 STAFF_ROLE_ID = 0
@@ -68,8 +71,16 @@ class CandidatureModal(Modal, title="Candidature SPM"):
       safe_name = f"candidat-{user.id}"
     channel_name = f"candidature-{safe_name}"
 
-    # Récupération de la catégorie
-    category = guild.get_channel(CATEGORY_CANDIDATURES_ID)
+    # Récupération automatique de la catégorie
+    category = None
+    if CATEGORY_CANDIDATURES_ID != 0:
+      category = guild.get_channel(CATEGORY_CANDIDATURES_ID)
+    
+    # Si la catégorie n'est pas renseignée ou introuvable, on prend celle du salon staff
+    if not category or not isinstance(category, discord.CategoryChannel):
+      staff_ch = guild.get_channel(STAFF_CHANNEL_ID)
+      if staff_ch and staff_ch.category:
+        category = staff_ch.category
 
     # Permissions : PRIVÉ POUR LE STAFF / ADMINS UNIQUEMENT (Candidat exclu)
     overwrites = {
