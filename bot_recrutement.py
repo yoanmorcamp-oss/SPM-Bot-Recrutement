@@ -9,11 +9,8 @@ from flask import Flask
 # ===============================================
 # CONFIGURATION
 # ===============================================
-STAFF_CHANNEL_ID = 1557463296326639666  # Salon staff principal (#candidatures-recues)
-
-# Mettre l'ID de la CATÉGORIE Discord (et non pas du salon textuel). 
-# Si laissé à 0, le bot prendra automatiquement la catégorie du salon STAFF_CHANNEL_ID.
-CATEGORY_CANDIDATURES_ID = 0  
+# Ton salon staff principal privé ou les candidatures seront publiées sous forme de fil
+STAFF_CHANNEL_ID = 1557463296326639666  # ID du salon #candidatures-recues
 
 # ID de ton rôle Staff (laisse 0 si tu veux autoriser uniquement les Administrateurs)
 STAFF_ROLE_ID = 0
@@ -59,7 +56,7 @@ class CandidatureModal(Modal, title="Candidature SPM"):
     guild = interaction.guild
     user = interaction.user
 
-    # Nom du salon
+    # Formatage propre du nom du fil
     safe_name = (
         user.name.lower()
         .replace(" ", "-")
@@ -69,42 +66,23 @@ class CandidatureModal(Modal, title="Candidature SPM"):
     )
     if not safe_name:
       safe_name = f"candidat-{user.id}"
-    channel_name = f"candidature-{safe_name}"
+    thread_name = f"candidature-{safe_name}"
 
-    # Récupération automatique de la catégorie
-    category = None
-    if CATEGORY_CANDIDATURES_ID != 0:
-      category = guild.get_channel(CATEGORY_CANDIDATURES_ID)
-    
-    # Si la catégorie n'est pas renseignée ou introuvable, on prend celle du salon staff
-    if not category or not isinstance(category, discord.CategoryChannel):
-      staff_ch = guild.get_channel(STAFF_CHANNEL_ID)
-      if staff_ch and staff_ch.category:
-        category = staff_ch.category
+    # Récupération du salon Staff (#candidatures-recues)
+    staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
 
-    # Permissions : PRIVÉ POUR LE STAFF / ADMINS UNIQUEMENT (Candidat exclu)
-    overwrites = {
-        guild.default_role: discord.PermissionOverwrite(view_channel=False),
-        guild.me: discord.PermissionOverwrite(
-            view_channel=True, send_messages=True, manage_channels=True
-        ),
-    }
-
-    # Accès au rôle Staff si défini
-    if STAFF_ROLE_ID != 0:
-      staff_role = guild.get_role(STAFF_ROLE_ID)
-      if staff_role:
-        overwrites[staff_role] = discord.PermissionOverwrite(
-            view_channel=True, send_messages=True, read_message_history=True
-        )
+    if not staff_channel or not isinstance(
+        staff_channel, discord.TextChannel
+    ):
+      await interaction.followup.send(
+          "❌ Erreur : Le salon staff est introuvable. Contactez un"
+          " administrateur.",
+          ephemeral=True,
+      )
+      return
 
     try:
-      # Création du salon privé réservé au staff
-      new_channel = await guild.create_text_channel(
-          name=channel_name, category=category, overwrites=overwrites
-      )
-
-      # Construction de l'embed
+      # Construction de l'embed de la candidature
       embed = discord.Embed(
           title=f"📥 Candidature de {user.display_name}",
           color=discord.Color.from_rgb(114, 13, 148),
@@ -127,26 +105,23 @@ class CandidatureModal(Modal, title="Candidature SPM"):
           name="Motivations", value=self.motivations.value, inline=False
       )
 
-      # Envoi du dossier au staff dans le nouveau salon
-      await new_channel.send(
-          content=(
-              f"🔔 **Nouvelle candidature reçue de {user.mention} !**\nVoici son"
-              " dossier. Vous pouvez débattre ici et valider ou refuser la"
-              " candidature avec les boutons ci-dessous."
-          ),
-          embed=embed,
-          view=StaffDecisionView(user, new_channel),
+      # Création d'un FIL DE DISCUSSION PRIVÉ sous #candidatures-recues
+      thread = await staff_channel.create_thread(
+          name=thread_name,
+          auto_archive_duration=1440,  # Auto-archivage au bout de 24h d'inactivité
+          type=discord.ChannelType.private_thread,  # Fil privé pour le staff uniquement
       )
 
-      # Notification courte dans le salon général du staff s'il est distinct
-      staff_channel = guild.get_channel(STAFF_CHANNEL_ID)
-      if staff_channel and staff_channel.id != new_channel.id:
-        await staff_channel.send(
-            content=(
-                f"📥 **Nouvelle candidature de {user.mention} !**\n"
-                f"➡️ Salon d'étude dédié : {new_channel.mention}"
-            )
-        )
+      # Envoi du message et des boutons à l'intérieur du fil
+      await thread.send(
+          content=(
+              f"🔔 **Nouvelle candidature reçue de {user.mention} !**\nVoici son"
+              " dossier complet. Le staff peut échanger ci-dessous et"
+              " trancher avec les boutons."
+          ),
+          embed=embed,
+          view=StaffDecisionView(user, thread),
+      )
 
       # Confirmation au candidat
       await interaction.followup.send(
@@ -157,7 +132,7 @@ class CandidatureModal(Modal, title="Candidature SPM"):
       )
 
     except Exception as e:
-      print(f"Erreur lors de la création du salon de candidature : {e}")
+      print(f"Erreur lors de la création du fil de candidature : {e}")
       await interaction.followup.send(
           "❌ Une erreur s'est produite lors de l'envoi de ta candidature."
           " Contacte un membre du staff.",
@@ -167,10 +142,10 @@ class CandidatureModal(Modal, title="Candidature SPM"):
 
 class StaffDecisionView(View):
 
-  def __init__(self, candidate: discord.User, channel: discord.TextChannel):
+  def __init__(self, candidate: discord.User, thread: discord.Thread):
     super().__init__(timeout=None)
     self.candidate = candidate
-    self.channel = channel
+    self.thread = thread
 
   async def interaction_check(self, interaction: discord.Interaction) -> bool:
     is_admin = (
@@ -196,7 +171,7 @@ class StaffDecisionView(View):
   @discord.ui.button(
       label="✅ Accepter",
       style=discord.ButtonStyle.success,
-      custom_id="btn_accept_candidature_v4",
+      custom_id="btn_accept_candidature_v5",
   )
   async def accepter(
       self, interaction: discord.Interaction, button: discord.Button
@@ -233,15 +208,15 @@ class StaffDecisionView(View):
         "✅ Candidature validée. Notification envoyée en MP au candidat.",
         ephemeral=True,
     )
-    await self.channel.send(
-        "🔒 **Candidature acceptée par le staff !** Ce salon peut désormais"
-        " être archivé ou supprimé."
+    await self.thread.send(
+        "🔒 **Candidature acceptée par le staff !** Ce fil peut désormais être"
+        " fermé ou archivé."
     )
 
   @discord.ui.button(
       label="❌ Refuser",
       style=discord.ButtonStyle.danger,
-      custom_id="btn_refuse_candidature_v4",
+      custom_id="btn_refuse_candidature_v5",
   )
   async def refuser(
       self, interaction: discord.Interaction, button: discord.Button
@@ -271,8 +246,8 @@ class StaffDecisionView(View):
         "❌ Candidature refusée. Notification envoyée en MP au candidat.",
         ephemeral=True,
     )
-    await self.channel.send(
-        "🔒 **Candidature refusée par le staff.** Ce salon peut être supprimé."
+    await self.thread.send(
+        "🔒 **Candidature refusée par le staff.** Ce fil peut être fermé."
     )
 
 
@@ -284,7 +259,7 @@ class RecrutementView(View):
   @discord.ui.button(
       label="Postuler chez SPM",
       style=discord.ButtonStyle.primary,
-      custom_id="btn_postuler_spm_v4",
+      custom_id="btn_postuler_spm_v5",
   )
   async def postuler(
       self, interaction: discord.Interaction, button: discord.Button
