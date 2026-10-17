@@ -154,7 +154,6 @@ class StaffDecisionView(View):
     self.channel = channel
 
   async def interaction_check(self, interaction: discord.Interaction) -> bool:
-    # Vérifie si l'utilisateur est admin ou possède le rôle staff
     is_admin = (
         interaction.user.guild_permissions.administrator
         if hasattr(interaction.user, "guild_permissions")
@@ -298,7 +297,7 @@ async def on_ready():
     name="deploy_recrutement",
     description="Poste le message et le bouton de recrutement SPM",
 )
-async defsetup_recrutement(interaction: discord.Interaction):
+async def setup_recrutement(interaction: discord.Interaction):
   await interaction.response.send_message(
       "Déploiement du message de recrutement en cours...", ephemeral=True
   )
@@ -321,6 +320,9 @@ async defsetup_recrutement(interaction: discord.Interaction):
   await interaction.channel.send(embed=embed, view=RecrutementView())
 
 
+# ===============================================
+# CONFIGURATION SERVEUR WEB (FLASK) & GUNICORN
+# ===============================================
 app = Flask("")
 
 
